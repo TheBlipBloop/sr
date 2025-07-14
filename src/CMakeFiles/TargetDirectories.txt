@@ -1,0 +1,3 @@
+/home/bloop/Documents/programming/cpp/sr/src/CMakeFiles/sr.dir
+/home/bloop/Documents/programming/cpp/sr/src/CMakeFiles/edit_cache.dir
+/home/bloop/Documents/programming/cpp/sr/src/CMakeFiles/rebuild_cache.dir

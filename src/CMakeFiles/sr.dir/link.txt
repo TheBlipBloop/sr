@@ -1,0 +1,1 @@
+/sbin/c++ -Wl,--dependency-file=CMakeFiles/sr.dir/link.d CMakeFiles/sr.dir/main.cpp.o -o sr  /usr/lib/libSDL3.so.0.2.16 /usr/lib/libGLEW.so
