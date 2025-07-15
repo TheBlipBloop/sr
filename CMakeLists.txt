@@ -12,11 +12,11 @@ project(ShaderRenderer
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Find SDL3, OpenGL, and GLEW
+# Find SDL3 & OpenGL
 find_package(SDL3 REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
 
+# Add SDL_shadercross
 
 # Header files
 set(HEADER_FILES "")
@@ -25,7 +25,9 @@ set(HEADER_FILES "")
 set(SOURCE_FILES "src/main.cpp")
 
 # Define includes
-include_directories(${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
+include_directories(${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/SDL3_shadercross/include)
+
+link_directories(external/SDL3_shadercross/lib)
 
 # Add executable
 add_executable(sr ${SOURCE_FILES} ${HEADER_FILES})
