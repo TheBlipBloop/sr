@@ -8,8 +8,8 @@ project(ShaderRenderer
 	DESCRIPTION "Local light weight shader display."
 	)
 
-# Set C++ standard to C++17.
-set(CMAKE_CXX_STANDARD 17)
+# Set C++ standard to C++20.
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Find SDL3 & OpenGL

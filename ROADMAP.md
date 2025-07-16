@@ -9,6 +9,11 @@
   - done! well using GLSL at least we are able to generate a GPU shader using SDLgpu and shaderc
 
 - Render GPU shader on screen @ real time
+  - we are going to need to figure out
+    - render pipelines
+    - quads
+    - vertex buffers
+    - uhh
 - Inject uniforms (time, mouse positions, etc)
 - Watch for file changes and auto reload shader
 - Record videos and screenshot interface
