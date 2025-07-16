@@ -16,7 +16,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(SDL3 REQUIRED)
 find_package(OpenGL REQUIRED)
 
-# Add SDL_shadercross
+set(SHADERC_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
+
+#
+add_subdirectory(external/shaderc)
 
 # Header files
 set(HEADER_FILES "")
@@ -25,9 +29,7 @@ set(HEADER_FILES "")
 set(SOURCE_FILES "src/main.cpp")
 
 # Define includes
-include_directories(${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/SDL3_shadercross/include)
-
-link_directories(external/SDL3_shadercross/lib)
+include_directories(${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/shaderc)
 
 # Add executable
 add_executable(sr ${SOURCE_FILES} ${HEADER_FILES})
@@ -36,5 +38,4 @@ add_executable(sr ${SOURCE_FILES} ${HEADER_FILES})
 target_link_libraries(sr
 	${SDL3_LIBRARIES}
 	${OpenGL_LIBRARIES}
-	${GLEW_LIBRARIES})
-
+	shaderc_combined)

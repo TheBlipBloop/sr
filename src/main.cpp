@@ -10,12 +10,16 @@
 #include <SDL3/SDL_video.h>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
+#include <shaderc/shaderc.h>
+#include <shaderc/status.h>
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_main.h>
 #include <iostream>
+#include <shaderc/shaderc.hpp>
 
 #define SHADER_FILE "./shader.glsl"
 #define WINDOW_WIDTH 512
@@ -91,17 +95,60 @@ bool Draw()
     return true;
 }
 
-SDL_GPUShader* LoadShaderFromGLSL(const char* shaderFilePath)
+bool CompileGLSL(const char* program, size_t programSize, char** output)
+{
+    shaderc_compiler_t glslCompiler = shaderc_compiler_initialize();
+    shaderc_compilation_result_t result = shaderc_compile_into_spv(
+        glslCompiler, program, programSize, shaderc_glsl_fragment_shader,
+        "shader.frag", "main", nullptr);
+
+    const auto status = shaderc_result_get_compilation_status(result);
+
+    if (status == shaderc_compilation_status_success)
+    {
+        const char* bytes = shaderc_result_get_bytes(result);
+        const size_t size = shaderc_result_get_length(result);
+
+        *output = (char*)malloc(size);
+        memcpy(*output, bytes, size);
+
+        shaderc_result_release(result);
+
+        return true;
+    }
+
+    const size_t errors = shaderc_result_get_num_errors(result);
+
+    SDL_Log("Failed to compile GLSL code. Encountered %zd errors.", errors);
+
+    SDL_Log("%s", shaderc_result_get_error_message(result));
+
+    shaderc_result_release(result);
+    return false;
+}
+
+SDL_GPUShader* LoadShaderFromGLSL(SDL_GPUDevice* device,
+                                  const char* shaderFilePath)
 {
     size_t fileSize;
-    const void* file = SDL_LoadFile(shaderFilePath, &fileSize);
+    const char* file = (char*)SDL_LoadFile(shaderFilePath, &fileSize);
+
+    char* shaderCode = nullptr;
+    const bool compileSuccess = CompileGLSL(file, fileSize, &shaderCode);
+
+    if (!compileSuccess)
+    {
+        return nullptr;
+    }
 
     SDL_GPUShaderCreateInfo info = {0};
-    info.code = (Uint8*)file;
+    info.code = (Uint8*)shaderCode;
     info.code_size = fileSize;
     info.entrypoint = "main";
+    info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+    info.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
 
-    return nullptr;
+    return SDL_CreateGPUShader(device, &info);
 }
 
 SDL_GPUGraphicsPipeline* CreatePipelineFromShader(const char* shaderFilePath)
@@ -116,6 +163,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         SDL_Log("Initialization failed. Aborting.");
         return SDL_AppResult::SDL_APP_FAILURE;
     }
+
+    SDL_GPUShader* shader = LoadShaderFromGLSL(GraphicsDevice, "shader.glsl");
 
     SDL_Log("WAHOO!");
 
