@@ -1,16 +1,15 @@
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_render.h>
-#include <SDL3/SDL_scancode.h>
+#include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
-#include <cerrno>
 #include <cstddef>
 #include <cstdlib>
-#include <ios>
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -90,6 +89,19 @@ bool Draw()
 
     SDL_SubmitGPUCommandBuffer(cmdbuf);
     return true;
+}
+
+SDL_GPUShader* LoadShaderFromGLSL(const char* shaderFilePath)
+{
+    size_t fileSize;
+    const void* file = SDL_LoadFile(shaderFilePath, &fileSize);
+
+    SDL_GPUShaderCreateInfo info = {0};
+    info.code = (Uint8*)file;
+    info.code_size = fileSize;
+    info.entrypoint = "main";
+
+    return nullptr;
 }
 
 SDL_GPUGraphicsPipeline* CreatePipelineFromShader(const char* shaderFilePath)
