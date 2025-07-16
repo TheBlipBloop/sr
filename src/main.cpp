@@ -112,6 +112,13 @@ bool CompileGLSL(const char* program, size_t programSize, char** output)
         *output = (char*)malloc(size);
         memcpy(*output, bytes, size);
 
+        for (int i = 0; i < size; i++)
+        {
+            std::cout << bytes[i];
+        }
+
+        SDL_Log("Compiled!");
+
         shaderc_result_release(result);
 
         return true;
