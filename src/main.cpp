@@ -13,6 +13,7 @@
 #include <cstring>
 #include <shaderc/shaderc.h>
 #include <shaderc/status.h>
+#include <type_traits>
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
@@ -233,7 +234,9 @@ bool CompileGLSL(const char *program, size_t programSize, const bool vertex,
     *output = (char *)malloc(size);
     memcpy(*output, bytes, size);
 
+    shaderc_compiler_release(glslCompiler);
     shaderc_result_release(result);
+
     *outputSize = size;
 
     SDL_Log("Compiled shader of length : %zd", size);
@@ -247,6 +250,7 @@ bool CompileGLSL(const char *program, size_t programSize, const bool vertex,
 
   SDL_Log("%s", shaderc_result_get_error_message(result));
 
+  shaderc_compiler_release(glslCompiler);
   shaderc_result_release(result);
   return false;
 }
@@ -299,11 +303,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     return SDL_AppResult::SDL_APP_FAILURE;
   }
 
-  // FragmentShader = LoadShaderFromGLSL(GraphicsDevice, "shader.glsl", false);
-  // VertexShader = LoadShaderFromGLSL(GraphicsDevice, "vertex.glsl", true);
+  FragmentShader = LoadShaderFromGLSL(GraphicsDevice, "shader.glsl", false);
+  VertexShader = LoadShaderFromGLSL(GraphicsDevice, "vertex.glsl", true);
 
-  VertexShader = LoadShaderRaw(GraphicsDevice, "v.spv", true);
-  FragmentShader = LoadShaderRaw(GraphicsDevice, "f.spv", false);
+  if (FragmentShader == nullptr || VertexShader == nullptr) {
+    return SDL_AppResult::SDL_APP_FAILURE;
+  }
+  // VertexShader = LoadShaderRaw(GraphicsDevice, "v.spv", true);
+  // FragmentShader = LoadShaderRaw(GraphicsDevice, "f.spv", false);
 
   Pipeline = CreateGraphicsPipeline(GraphicsDevice, FragmentShader);
 

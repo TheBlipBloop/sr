@@ -14,6 +14,9 @@
     - quads
     - vertex buffers
     - uhh
+
+  - DONE!
+
 - Inject uniforms (time, mouse positions, etc)
 - Watch for file changes and auto reload shader
 - Record videos and screenshot interface
