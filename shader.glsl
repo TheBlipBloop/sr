@@ -1,13 +1,13 @@
 #version 450
 
 layout(location = 0) out vec4 colorOut;
-layout(set = 0, binding = 0) uniform Block {
-    float iTime;
-} block;
 
 void main()
 {
     vec2 uv = ((gl_FragCoord.xy / 256) - 0.5) * 2.0; // Scale UV's to -1, 1
+    vec3 color = vec3(sin(uv.x * 10 + uv.y * 5.0));
 
-    colorOut = vec4(uv, block.iTime, 1.0);
+    color *= vec3(1.0, 0.5, 0.2);
+
+    colorOut = vec4(color, 1.0);
 }

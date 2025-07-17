@@ -1,3 +1,4 @@
+#include <string>
 #define SDL_MAIN_USE_CALLBACKS
 #define GLSL_ENTRY_POINT "main"
 
@@ -18,9 +19,12 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <shaderc/shaderc.h>
 #include <shaderc/shaderc.hpp>
 #include <shaderc/status.h>
+
+using namespace std::filesystem;
 
 SDL_GPUDevice* GraphicsDevice;
 SDL_Window* Window;
@@ -28,6 +32,8 @@ SDL_Window* Window;
 SDL_GPUShader* FragmentShader = nullptr;
 SDL_GPUShader* VertexShader = nullptr;
 SDL_GPUGraphicsPipeline* Pipeline = nullptr;
+
+path FragmentShaderFilePath;
 
 bool InitializeDeviceAndWindow(const uint window_width,
                                const uint window_height)
@@ -44,7 +50,7 @@ bool InitializeDeviceAndWindow(const uint window_width,
     }
 
     Window = SDL_CreateWindow("Display", window_width, window_height,
-                              SDL_WINDOW_RESIZABLE);
+                              SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALWAYS_ON_TOP);
     if (Window == nullptr)
     {
         SDL_Log("CreateWindow failed: %s", SDL_GetError());
@@ -130,9 +136,6 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
 
         // Testing uniform (iTime)
         testTime += 0.01;
-        SDL_Log("%f", testTime);
-        SDL_PushGPUFragmentUniformData(cmdbuf, 0, &testTime, sizeof(float));
-
         SDL_EndGPURenderPass(renderPass);
     }
 
@@ -197,7 +200,6 @@ SDL_GPUShader* LoadShaderFromGLSL(SDL_GPUDevice* device,
 
     if (!compileSuccess)
     {
-        free(shaderCode);
         return nullptr;
     }
 
@@ -215,20 +217,17 @@ SDL_GPUShader* LoadShaderFromGLSL(SDL_GPUDevice* device,
     return shader;
 }
 
-SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
+bool RegenerateRenderPipline(const char* vertexShaderSourcePath,
+                             const char* fragmentShaderSourcePath)
 {
-    if (!InitializeDeviceAndWindow(256, 256))
-    {
-        SDL_Log("Initialization failed. Aborting.");
-        return SDL_AppResult::SDL_APP_FAILURE;
-    }
-
-    FragmentShader = LoadShaderFromGLSL(GraphicsDevice, "shader.glsl", false);
-    VertexShader = LoadShaderFromGLSL(GraphicsDevice, "vertex.glsl", true);
+    FragmentShader =
+        LoadShaderFromGLSL(GraphicsDevice, fragmentShaderSourcePath, false);
+    VertexShader =
+        LoadShaderFromGLSL(GraphicsDevice, vertexShaderSourcePath, true);
 
     if (FragmentShader == nullptr || VertexShader == nullptr)
     {
-        return SDL_AppResult::SDL_APP_FAILURE;
+        return false;
     }
 
     Pipeline =
@@ -237,14 +236,42 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     SDL_ReleaseGPUShader(GraphicsDevice, VertexShader);
     SDL_ReleaseGPUShader(GraphicsDevice, FragmentShader);
 
-    VertexShader = nullptr;
-    FragmentShader = nullptr;
+    return true;
+}
+
+SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
+{
+    if (!InitializeDeviceAndWindow(256, 256))
+    {
+        SDL_Log("Initialization failed. Aborting.");
+        return SDL_AppResult::SDL_APP_FAILURE;
+    }
+
+    FragmentShaderFilePath = path("shader.glsl");
+
+    RegenerateRenderPipline("vertex.glsl", "shader.glsl");
 
     return SDL_AppResult::SDL_APP_CONTINUE;
 }
 
+file_time_type lastGenerateTime;
+
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
+    if (exists(FragmentShaderFilePath) &&
+        last_write_time(FragmentShaderFilePath) != lastGenerateTime)
+    {
+        lastGenerateTime = last_write_time(FragmentShaderFilePath);
+        RegenerateRenderPipline("vertex.glsl", FragmentShaderFilePath.c_str());
+    }
+
+    // If the fragment shdare is invalid
+    if (FragmentShader == nullptr)
+    {
+        // Pause until its valid again
+        return SDL_APP_CONTINUE;
+    }
+
     bool drawSuccess = Draw(GraphicsDevice, Window, Pipeline);
 
     return drawSuccess ? SDL_AppResult::SDL_APP_CONTINUE

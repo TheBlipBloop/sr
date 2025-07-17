@@ -17,6 +17,8 @@
 
   - DONE!
 
-- Inject uniforms (time, mouse positions, etc)
 - Watch for file changes and auto reload shader
+  - doing this before uniforms becasue having it done will make uniforms so much easier to do!
+
+- Inject uniforms (time, mouse positions, etc)
 - Record videos and screenshot interface
