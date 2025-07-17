@@ -8,6 +8,11 @@ void main()
     vec3 color = vec3(sin(uv.x * 10 + uv.y * 5.0));
 
     color *= vec3(1.0, 0.5, 0.2);
+    color += vec3(0.0, 0.0, pow(uv.y, 2.0));
+
+    color /= uv.x;
+
+    color += uv.y;
 
     colorOut = vec4(color, 1.0);
 }

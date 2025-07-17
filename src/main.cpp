@@ -258,6 +258,8 @@ file_time_type lastGenerateTime;
 
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
+    SDL_Delay(100);
+
     if (exists(FragmentShaderFilePath) &&
         last_write_time(FragmentShaderFilePath) != lastGenerateTime)
     {
