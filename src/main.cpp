@@ -36,10 +36,8 @@ bool Initialize(const uint window_width, const uint window_height) {
   SDL_Init(SDL_INIT_VIDEO);
 
   // Init GPU
-  GraphicsDevice = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV |
-                                           SDL_GPU_SHADERFORMAT_DXIL |
-                                           SDL_GPU_SHADERFORMAT_MSL,
-                                       true, nullptr);
+  GraphicsDevice =
+      SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
 
   if (GraphicsDevice == nullptr) {
     SDL_Log("CreateDevice failed.");
@@ -116,6 +114,7 @@ SDL_GPUGraphicsPipeline *CreateGraphicsPipeline(SDL_GPUDevice *device,
   targetInfo.num_color_targets = 1;
 
   SDL_GPUGraphicsPipelineCreateInfo pipelineCreateInfo = {0};
+  pipelineCreateInfo.target_info = targetInfo;
   pipelineCreateInfo.rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
   pipelineCreateInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
   pipelineCreateInfo.fragment_shader = fragmentShader;
@@ -171,7 +170,7 @@ bool Draw() {
   if (swapchainTexture != NULL) {
     SDL_GPUColorTargetInfo colorTargetInfo = {0};
     colorTargetInfo.texture = swapchainTexture;
-    colorTargetInfo.clear_color = (SDL_FColor){0.0f, 0.0f, 0.0f, 1.0f};
+    colorTargetInfo.clear_color = (SDL_FColor){1.0f, 0.0f, 1.0f, 1.0f};
     colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
     colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
 
@@ -179,7 +178,7 @@ bool Draw() {
         SDL_BeginGPURenderPass(cmdbuf, &colorTargetInfo, 1, NULL);
 
     SDL_BindGPUGraphicsPipeline(renderPass, Pipeline);
-    SDL_DrawGPUPrimitives(renderPass, 4, 1, 0, 0);
+    SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
     SDL_EndGPURenderPass(renderPass);
   }
@@ -278,8 +277,20 @@ SDL_GPUShader *LoadShaderFromGLSL(SDL_GPUDevice *device,
   return SDL_CreateGPUShader(device, &info);
 }
 
-SDL_GPUGraphicsPipeline *CreatePipelineFromShader(const char *shaderFilePath) {
-  return nullptr;
+SDL_GPUShader *LoadShaderRaw(SDL_GPUDevice *device, const char *shaderFilePath,
+                             const bool vertex) {
+  size_t fileSize;
+  const char *file = (char *)SDL_LoadFile(shaderFilePath, &fileSize);
+
+  SDL_GPUShaderCreateInfo info = {0};
+  info.code = (Uint8 *)file;
+  info.code_size = fileSize;
+  info.entrypoint = "main";
+  info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+  info.stage =
+      vertex ? SDL_GPU_SHADERSTAGE_VERTEX : SDL_GPU_SHADERSTAGE_FRAGMENT;
+
+  return SDL_CreateGPUShader(device, &info);
 }
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
@@ -288,8 +299,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     return SDL_AppResult::SDL_APP_FAILURE;
   }
 
-  FragmentShader = LoadShaderFromGLSL(GraphicsDevice, "shader.glsl", false);
-  VertexShader = LoadShaderFromGLSL(GraphicsDevice, "vertex.glsl", true);
+  // FragmentShader = LoadShaderFromGLSL(GraphicsDevice, "shader.glsl", false);
+  // VertexShader = LoadShaderFromGLSL(GraphicsDevice, "vertex.glsl", true);
+
+  VertexShader = LoadShaderRaw(GraphicsDevice, "v.spv", true);
+  FragmentShader = LoadShaderRaw(GraphicsDevice, "f.spv", false);
 
   Pipeline = CreateGraphicsPipeline(GraphicsDevice, FragmentShader);
 
