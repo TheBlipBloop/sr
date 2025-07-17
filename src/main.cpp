@@ -8,6 +8,7 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+#include <cassert>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -61,50 +62,11 @@ bool Initialize(const uint window_width, const uint window_height) {
 }
 
 SDL_GPUGraphicsPipeline *CreateGraphicsPipeline(SDL_GPUDevice *device,
+                                                SDL_GPUShader *vertexShader,
                                                 SDL_GPUShader *fragmentShader) {
-  // SDL_GPUGraphicsPipelineTargetInfo targetInfo = {0};
-  // targetInfo.num_color_targets = 0;
-
-  /*
-  SDL_GPUGraphicsPipelineCreateInfo pipelineCreateInfo = {
-      .target_info =
-          {
-              .num_color_targets = 1,
-              .color_target_descriptions =
-                  (SDL_GPUColorTargetDescription[]){
-                      {.format =
-                           SDL_GetGPUSwapchainTextureFormat(device, Window)}},
-          },
-      .rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL,
-      .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-      .vertex_shader = nullptr,
-      .fragment_shader = fragmentShader,
-  };
-  */
-
-  /*
-  .num_color_targets = 1,
-  .color_target_descriptions =
-      (SDL_GPUColorTargetDescription[]){
-          {.format = SDL_GetGPUSwapchainTextureFormat(device, window)}},
-  */
-
-  /*
-  SDL_GPUGraphicsPipelineCreateInfo pipelineCreateInfo = {
-      .target_info =
-          {
-              .num_color_targets = 1,
-              .color_target_descriptions =
-                  (SDL_GPUColorTargetDescription[]){
-                      {.format =
-                           SDL_GetGPUSwapchainTextureFormat(device, window)}},
-          },
-
-      .rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
-  .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-  .vertex_shader = vertexShader, .fragment_shader = fragmentShader,
-};
-*/
+  assert(device);
+  assert(vertexShader);
+  assert(fragmentShader);
 
   SDL_GPUColorTargetDescription colorTargetInfo = {};
   colorTargetInfo.format = SDL_GetGPUSwapchainTextureFormat(device, Window);
@@ -118,31 +80,8 @@ SDL_GPUGraphicsPipeline *CreateGraphicsPipeline(SDL_GPUDevice *device,
   pipelineCreateInfo.target_info = targetInfo;
   pipelineCreateInfo.rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
   pipelineCreateInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+  pipelineCreateInfo.vertex_shader = vertexShader;
   pipelineCreateInfo.fragment_shader = fragmentShader;
-  pipelineCreateInfo.vertex_shader = VertexShader;
-
-  if (fragmentShader == nullptr) {
-    SDL_Log("no frag shader");
-  }
-  if (VertexShader == nullptr) {
-    SDL_Log("no vert shader");
-  }
-
-  /*
-  SDL_GPUGraphicsPipelineCreateInfo pipelineCreateInfo = {
-      .target_info = {
-          .num_color_targets = 1,
-          .color_target_descriptions = (SDL_GPUColorTargetDescription[]){{
-              .format = SDL_GetGPUSwapchainTextureFormat(device, window)
-          }},
-      },
-
-      .rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
-      .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-      .vertex_shader = vertexShader,
-      .fragment_shader = fragmentShader,
-  };
-  */
 
   SDL_GPUGraphicsPipeline *pipeline =
       SDL_CreateGPUGraphicsPipeline(device, &pipelineCreateInfo);
@@ -154,15 +93,16 @@ SDL_GPUGraphicsPipeline *CreateGraphicsPipeline(SDL_GPUDevice *device,
   return pipeline;
 }
 
-bool Draw() {
-  SDL_GPUCommandBuffer *cmdbuf = SDL_AcquireGPUCommandBuffer(GraphicsDevice);
+bool Draw(SDL_GPUDevice *device, SDL_Window *window,
+          SDL_GPUGraphicsPipeline *pipeline) {
+  SDL_GPUCommandBuffer *cmdbuf = SDL_AcquireGPUCommandBuffer(device);
   if (cmdbuf == nullptr) {
     SDL_Log("AcquireGPUCommandBuffer failed: %s", SDL_GetError());
     return false;
   }
 
   SDL_GPUTexture *swapchainTexture;
-  if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmdbuf, Window, &swapchainTexture,
+  if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmdbuf, window, &swapchainTexture,
                                              nullptr, nullptr)) {
     SDL_Log("WaitAndAcquireGPUSwapchainTexture failed: %s", SDL_GetError());
     return false;
@@ -178,43 +118,15 @@ bool Draw() {
     SDL_GPURenderPass *renderPass =
         SDL_BeginGPURenderPass(cmdbuf, &colorTargetInfo, 1, NULL);
 
-    SDL_BindGPUGraphicsPipeline(renderPass, Pipeline);
+    SDL_BindGPUGraphicsPipeline(renderPass, pipeline);
     SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
     SDL_EndGPURenderPass(renderPass);
   }
+
   SDL_SubmitGPUCommandBuffer(cmdbuf);
 
   return true;
-  /*
-  SDL_GPUCommandBuffer* cmdbuf = SDL_AcquireGPUCommandBuffer(GraphicsDevice);
-  if (cmdbuf == nullptr)
-  {
-      SDL_Log("AcquireGPUCommandBuffer failed: %s", SDL_GetError());
-      return false;
-  }
-
-  SDL_GPUTexture* swapchainTexture;
-  if (!SDL_WaitAndAcquireGPUSwapchainTexture(
-          cmdbuf, Window, &swapchainTexture, nullptr, nullptr))
-  {
-      SDL_Log("WaitAndAcquireGPUSwapchainTexture failed: %s", SDL_GetError());
-      return false;
-  }
-
-  SDL_GPUColorTargetInfo colorTargetInfo = {0};
-  colorTargetInfo.texture = swapchainTexture;
-  colorTargetInfo.clear_color = (SDL_FColor){0.3f, 0.1f, 0.5f, 1.0f};
-  colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-  colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-
-  SDL_GPURenderPass* renderPass =
-      SDL_BeginGPURenderPass(cmdbuf, &colorTargetInfo, 1, NULL);
-  SDL_EndGPURenderPass(renderPass);
-
-  SDL_SubmitGPUCommandBuffer(cmdbuf);
-  return true;
-*/
 }
 
 bool CompileGLSL(const char *program, size_t programSize, const bool vertex,
@@ -309,16 +221,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
   if (FragmentShader == nullptr || VertexShader == nullptr) {
     return SDL_AppResult::SDL_APP_FAILURE;
   }
-  // VertexShader = LoadShaderRaw(GraphicsDevice, "v.spv", true);
-  // FragmentShader = LoadShaderRaw(GraphicsDevice, "f.spv", false);
 
-  Pipeline = CreateGraphicsPipeline(GraphicsDevice, FragmentShader);
+  Pipeline =
+      CreateGraphicsPipeline(GraphicsDevice, VertexShader, FragmentShader);
+
+  SDL_ReleaseGPUShader(GraphicsDevice, VertexShader);
+  SDL_ReleaseGPUShader(GraphicsDevice, FragmentShader);
 
   return SDL_AppResult::SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
-  bool drawSuccess = Draw();
+  bool drawSuccess = Draw(GraphicsDevice, Window, Pipeline);
 
   return drawSuccess ? SDL_AppResult::SDL_APP_CONTINUE
                      : SDL_AppResult::SDL_APP_FAILURE;
