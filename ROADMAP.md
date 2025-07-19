@@ -19,6 +19,9 @@
 
 - Watch for file changes and auto reload shader
   - doing this before uniforms becasue having it done will make uniforms so much easier to do!
+    DONE!
+
+- Refactor to take advantage of OOP
 
 - Inject uniforms (time, mouse positions, etc)
 - Record videos and screenshot interface
