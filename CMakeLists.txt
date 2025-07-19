@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(SDL3 REQUIRED)
 find_package(OpenGL REQUIRED)
 
+# ? not needed any more ?
 set(SHADERC_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
 
@@ -23,10 +24,10 @@ set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
 add_subdirectory(external/shaderc)
 
 # Header files
-set(HEADER_FILES "")
+set(HEADER_FILES "src/shader.h")
 
 # Source files
-set(SOURCE_FILES "src/main.cpp")
+set(SOURCE_FILES "src/main.cpp" "src/shader.cpp")
 
 # Define includes
 include_directories(${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/shaderc)

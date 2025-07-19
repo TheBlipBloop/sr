@@ -1,3 +1,4 @@
+#include "shader.h"
 #include <string>
 #define SDL_MAIN_USE_CALLBACKS
 #define GLSL_ENTRY_POINT "main"
@@ -23,6 +24,7 @@
 #include <shaderc/shaderc.h>
 #include <shaderc/shaderc.hpp>
 #include <shaderc/status.h>
+#include <src/shader.h>
 
 using namespace std::filesystem;
 
@@ -142,79 +144,6 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
     SDL_SubmitGPUCommandBuffer(cmdbuf);
 
     return true;
-}
-
-bool CompileGLSL(const char* sourceText, size_t sourceSize, const bool vertex,
-                 char** output, size_t* outputSize)
-{
-    shaderc_compiler_t glslCompiler = shaderc_compiler_initialize();
-
-    shaderc_compilation_result_t result = shaderc_compile_into_spv(
-        glslCompiler, sourceText, sourceSize,
-        vertex ? shaderc_glsl_vertex_shader : shaderc_glsl_fragment_shader,
-        "default", GLSL_ENTRY_POINT, nullptr);
-
-    shaderc_compiler_release(glslCompiler);
-
-    const auto status = shaderc_result_get_compilation_status(result);
-
-    if (status != shaderc_compilation_status_success)
-    {
-        const size_t errors = shaderc_result_get_num_errors(result);
-
-        SDL_Log("Failed to compile GLSL code. Encountered %zd errors.", errors);
-        SDL_Log("%s", shaderc_result_get_error_message(result));
-
-        shaderc_result_release(result);
-        return false;
-    }
-
-    const char* bytes = shaderc_result_get_bytes(result);
-    const size_t size = shaderc_result_get_length(result);
-
-    *output = (char*)malloc(size);
-    memcpy(*output, bytes, size);
-
-    shaderc_result_release(result);
-
-    *outputSize = size;
-
-    SDL_Log("Compiled shader of length : %zd", size);
-
-    return true;
-}
-
-SDL_GPUShader* LoadShaderFromGLSL(SDL_GPUDevice* device,
-                                  const char* shaderFilePath, const bool vertex)
-{
-    size_t fileSize;
-    const char* file = (char*)SDL_LoadFile(shaderFilePath, &fileSize);
-
-    char* shaderCode;
-    size_t shaderCodeSize;
-
-    const bool compileSuccess =
-        CompileGLSL(file, fileSize, vertex, &shaderCode, &shaderCodeSize);
-
-    SDL_free((void*)file);
-
-    if (!compileSuccess)
-    {
-        return nullptr;
-    }
-
-    SDL_GPUShaderCreateInfo info = {0};
-    info.code = (Uint8*)shaderCode;
-    info.code_size = shaderCodeSize;
-    info.entrypoint = GLSL_ENTRY_POINT;
-    info.format = SDL_GPU_SHADERFORMAT_SPIRV;
-    info.stage =
-        vertex ? SDL_GPU_SHADERSTAGE_VERTEX : SDL_GPU_SHADERSTAGE_FRAGMENT;
-
-    SDL_GPUShader* shader = SDL_CreateGPUShader(device, &info);
-    free(shaderCode);
-
-    return shader;
 }
 
 bool RegenerateRenderPipline(const char* vertexShaderSourcePath,

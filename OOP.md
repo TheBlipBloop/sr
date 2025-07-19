@@ -2,6 +2,8 @@
 
 Right now the codebase is very clike which is great but its C++20 so we might as well take advantage of classes and all that --bloat-- fancy shit.
 
+!!! UPDATE : Pipelines are the ones extended for hot reloading, shaders simply implement a Load<>(gpu) method to place shader on gpu
+
 ## Project structure breakdown
 
 ### Shader.cpp/h
@@ -15,6 +17,10 @@ A shader that automatically checks for changes from its source file. Checking ei
 ### Display
 
 Initializes and manages window and GPU devices.
+
+### Pipeline?
+
+idk
 
 ### main.cpp
 
