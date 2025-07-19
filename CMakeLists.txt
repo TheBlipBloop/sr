@@ -27,16 +27,19 @@ add_subdirectory(external/shaderc)
 set(HEADER_FILES "src/shader.h")
 
 # Source files
-set(SOURCE_FILES "src/main.cpp" "src/shader.cpp")
+# set(SOURCE_FILES "src/main.cpp" "src/shader.cpp")
 
 # Define includes
-include_directories(${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/shaderc)
+include_directories(src ${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/shaderc)
 
 # Add executable
-add_executable(sr ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(sr src/main.cpp src/shader.cpp src/shader.h )
+# target_sources(sr PRIVATE src/shader.cpp src/shader.h)
+# target_include_directories(sr PRIVATE src/)
 
 # Link libs
 target_link_libraries(sr
 	${SDL3_LIBRARIES}
 	${OpenGL_LIBRARIES}
 	shaderc_combined)
+

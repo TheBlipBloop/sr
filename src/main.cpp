@@ -21,21 +21,19 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <shader.h>
 #include <shaderc/shaderc.h>
 #include <shaderc/shaderc.hpp>
 #include <shaderc/status.h>
-#include <src/shader.h>
 
 using namespace std::filesystem;
 
 SDL_GPUDevice* GraphicsDevice;
 SDL_Window* Window;
 
-SDL_GPUShader* FragmentShader = nullptr;
-SDL_GPUShader* VertexShader = nullptr;
+Shader* FragmentShader = nullptr;
+Shader* VertexShader = nullptr;
 SDL_GPUGraphicsPipeline* Pipeline = nullptr;
-
-path FragmentShaderFilePath;
 
 bool InitializeDeviceAndWindow(const uint window_width,
                                const uint window_height)
@@ -150,20 +148,12 @@ bool RegenerateRenderPipline(const char* vertexShaderSourcePath,
                              const char* fragmentShaderSourcePath)
 {
     FragmentShader =
-        LoadShaderFromGLSL(GraphicsDevice, fragmentShaderSourcePath, false);
-    VertexShader =
-        LoadShaderFromGLSL(GraphicsDevice, vertexShaderSourcePath, true);
+        new Shader(fragmentShaderSourcePath, ShaderStage::Fragment);
+    VertexShader = new Shader(vertexShaderSourcePath, ShaderStage::Vertex);
 
-    if (FragmentShader == nullptr || VertexShader == nullptr)
-    {
-        return false;
-    }
-
-    Pipeline =
-        CreateGraphicsPipeline(GraphicsDevice, VertexShader, FragmentShader);
-
-    SDL_ReleaseGPUShader(GraphicsDevice, VertexShader);
-    SDL_ReleaseGPUShader(GraphicsDevice, FragmentShader);
+    Pipeline = CreateGraphicsPipeline(GraphicsDevice,
+                                      VertexShader->Load(GraphicsDevice),
+                                      FragmentShader->Load(GraphicsDevice));
 
     return true;
 }
@@ -176,8 +166,6 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         return SDL_AppResult::SDL_APP_FAILURE;
     }
 
-    FragmentShaderFilePath = path("shader.glsl");
-
     RegenerateRenderPipline("vertex.glsl", "shader.glsl");
 
     return SDL_AppResult::SDL_APP_CONTINUE;
@@ -189,6 +177,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 {
     SDL_Delay(100);
 
+    /*
     if (exists(FragmentShaderFilePath) &&
         last_write_time(FragmentShaderFilePath) != lastGenerateTime)
     {
@@ -202,6 +191,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         // Pause until its valid again
         return SDL_APP_CONTINUE;
     }
+    */
 
     bool drawSuccess = Draw(GraphicsDevice, Window, Pipeline);
 
