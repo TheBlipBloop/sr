@@ -1,5 +1,12 @@
 # Refactor => OOP
 
+## Round 2
+
+Fragment shader and vertex shaders are handled very differently but have some commonality. Both require GPU device info, both convert a string into SPRIV code. Both implement a Load<> method repsonsbile for exporting the cached SDL shader.
+Fragment shaders apply preprocessing to their shader text. Vertex shaders use the hardcoded triangle.
+
+My annoyance with making these into classes is that though there is shared functinality, there is no need for their reuse. But its fun so.
+
 Right now the codebase is very clike which is great but its C++20 so we might as well take advantage of classes and all that --bloat-- fancy shit.
 
 !!! UPDATE : Pipelines are the ones extended for hot reloading, shaders simply implement a Load<>(gpu) method to place shader on gpu

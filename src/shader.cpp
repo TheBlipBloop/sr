@@ -2,94 +2,51 @@
 #include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_log.h>
 #include <cassert>
-#include <filesystem>
+#include <cstddef>
 #include <shaderc/shaderc.h>
-#include <string>
 
-const string FRAGMENT_HEADER = R"(
-#version 450
-
-layout(location = 0) out vec4 outColor;
-
-layout(std140, set = 3, binding = 0) uniform UniformData{
-	vec2 resolution;
-	float time_seconds;
-	vec2 mouse_position;
-	int frame;
-} uniform_data;
-
-#define iTime uniform_data.time_seconds
-#define iResolution uniform_data.resolution
-#define iMouse uniform_data.mouse_position
-#define iFrame uniform_data.frame
-
-)";
-
-const string FRAGMENT_FOOTER = R"(
-void main()
+Shader::Shader()
 {
-    vec4 color = vec4(0);
-    mainImage(color, gl_FragCoord.xy);
-    outColor = color;
-}
-)";
-
-Shader::Shader(string shaderSourcePath, ShaderStage shaderStage,
-               int uniformBufferCount)
-{
-    sourceFilePath = path(shaderSourcePath);
-    stage = shaderStage;
-    this->uniformBufferCount = uniformBufferCount;
+    shaderCache = nullptr;
+    deviceCache = nullptr;
 }
 
 Shader::~Shader()
 {
-    // TODO : Release GPU Shader
+    if (shaderCache != nullptr)
+    {
+        SDL_ReleaseGPUShader(deviceCache, shaderCache);
+    }
 }
 
 SDL_GPUShader* Shader::Load(SDL_GPUDevice* forDevice, bool forceRegenerate)
 {
     if (shaderCache == nullptr || forceRegenerate)
     {
-        if (shaderCache != nullptr)
+        if (CompileShader(forDevice, &shaderCache))
         {
-            // TODO : Does not work if device is different
-            SDL_ReleaseGPUShader(forDevice, shaderCache);
+            deviceCache = forDevice;
         }
-
-        shaderCache = CompileShader(sourceFilePath, forDevice);
     }
 
     return shaderCache;
 }
 
-SDL_GPUShader* Shader::CompileShader(path sourceFile, SDL_GPUDevice* onDevice)
+bool Shader::CompileShader(SDL_GPUDevice* onDevice, SDL_GPUShader** outShader)
 {
-    assert(exists(sourceFile));
     assert(onDevice != nullptr);
 
-    size_t sourceSize;
-    const char* source = (char*)SDL_LoadFile(sourceFile.c_str(), &sourceSize);
-
-    string preprocessedSource = string(source);
-    if (stage == ShaderStage::Fragment)
-    {
-        preprocessedSource =
-            FRAGMENT_HEADER + preprocessedSource + FRAGMENT_FOOTER;
-    }
+    string source = GetShaderSourceCode();
 
     char* shaderCode;
     size_t shaderCodeSize;
 
     const bool compileSuccess = CompileSourceToShaderCode(
-        preprocessedSource.c_str(), preprocessedSource.length(), &shaderCode,
-        &shaderCodeSize);
-
-    SDL_free((void*)source);
+        source.c_str(), source.size(), &shaderCode, &shaderCodeSize);
 
     if (!compileSuccess)
     {
-        return nullptr;
+        return false;
     }
 
     SDL_GPUShaderCreateInfo createInfo = {0};
@@ -98,12 +55,12 @@ SDL_GPUShader* Shader::CompileShader(path sourceFile, SDL_GPUDevice* onDevice)
     createInfo.entrypoint = GLSL_ENTRY_POINT;
     createInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
     createInfo.stage = GetSDLShaderStage();
-    createInfo.num_uniform_buffers = uniformBufferCount;
+    createInfo.num_uniform_buffers = GetUniformBufferCount();
 
-    SDL_GPUShader* shader = SDL_CreateGPUShader(onDevice, &createInfo);
+    *outShader = SDL_CreateGPUShader(onDevice, &createInfo);
     free(shaderCode);
 
-    return shader;
+    return true;
 }
 
 bool Shader::CompileSourceToShaderCode(const char* sourceText,
@@ -145,24 +102,4 @@ bool Shader::CompileSourceToShaderCode(const char* sourceText,
     SDL_Log("Compiled shader of length : %zd", size);
 
     return true;
-}
-
-shaderc_shader_kind Shader::GetShaderKind() const
-{
-    if (stage == ShaderStage::Fragment)
-    {
-        return shaderc_glsl_fragment_shader;
-    }
-
-    return shaderc_glsl_vertex_shader;
-}
-
-SDL_GPUShaderStage Shader::GetSDLShaderStage() const
-{
-    if (stage == ShaderStage::Fragment)
-    {
-        return SDL_GPUShaderStage::SDL_GPU_SHADERSTAGE_FRAGMENT;
-    }
-
-    return SDL_GPUShaderStage::SDL_GPU_SHADERSTAGE_VERTEX;
 }

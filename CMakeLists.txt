@@ -27,7 +27,7 @@ add_subdirectory(external/shaderc)
 include_directories(src ${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/shaderc)
 
 # Add executable
-add_executable(sr src/main.cpp src/shader.cpp src/shader.h)
+add_executable(sr src/main.cpp src/shader.cpp src/shader.h src/fragment-shader.cpp src/fragment-shader.h src/vertex-shader.cpp src/vertex-shader.h)
 # target_sources(sr PRIVATE src/shader.cpp src/shader.h)
 # target_include_directories(sr PRIVATE src/)
 

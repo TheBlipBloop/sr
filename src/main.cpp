@@ -6,6 +6,9 @@
 #define SDL_MAIN_USE_CALLBACKS
 #define GLSL_ENTRY_POINT "main"
 
+#include "fragment-shader.h"
+#include "shader.h"
+#include "vertex-shader.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
@@ -24,7 +27,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <shader.h>
 #include <shaderc/shaderc.h>
 #include <shaderc/shaderc.hpp>
 #include <shaderc/status.h>
@@ -40,8 +42,8 @@ path FragmentShaderFilePath = "shader.glsl";
 
 file_time_type lastGenerateTime;
 
-Shader* FragmentShader = nullptr;
-Shader* VertexShader = nullptr;
+Shader* fragmentShader = nullptr;
+Shader* vertexShader = nullptr;
 
 float testTime = 0.0f;
 
@@ -154,10 +156,10 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
         int w;
         int h;
         SDL_GetWindowSize(Window, &w, &h);
-        SDL_GetMouseState(&uniform.mouse_x, &uniform.mouse_y);
-
         uniform.screen_width = w;
         uniform.screen_height = h;
+
+        SDL_GetMouseState(&uniform.mouse_x, &uniform.mouse_y);
 
         SDL_PushGPUFragmentUniformData(cmdbuf, 0, &uniform,
                                        sizeof(UniformBlock));
@@ -195,10 +197,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         return SDL_AppResult::SDL_APP_FAILURE;
     }
 
-    VertexShader = new Shader("vertex.glsl", ShaderStage::Vertex);
-    FragmentShader = new Shader("shader.glsl", ShaderStage::Fragment, 1);
+    vertexShader = new VertexShader();
+    fragmentShader = new FragmentShader("shader.glsl");
 
-    RegenerateRenderPipline(VertexShader, FragmentShader);
+    RegenerateRenderPipline(vertexShader, fragmentShader);
 
     return SDL_AppResult::SDL_APP_CONTINUE;
 }
@@ -210,11 +212,11 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (exists(FragmentShaderFilePath) &&
         last_write_time(FragmentShaderFilePath) != lastGenerateTime)
     {
-        RegenerateRenderPipline(VertexShader, FragmentShader);
+        RegenerateRenderPipline(vertexShader, fragmentShader);
     }
 
     // If the fragment shdare is invalid
-    if (FragmentShader == nullptr)
+    if (fragmentShader == nullptr)
     {
         // Pause until its valid again
         return SDL_APP_CONTINUE;
