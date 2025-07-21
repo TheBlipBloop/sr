@@ -1,4 +1,5 @@
 #include "shader.h"
+#include <SDL3/SDL_mouse.h>
 #include <complex>
 #include <cstdint>
 #include <string>
@@ -108,11 +109,14 @@ SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
 
     return pipeline;
 }
+
 struct alignas(16) UniformBlock
 {
     float screen_width;
     float screen_height;
     float iTime;
+    float mouse_x;
+    float mouse_y;
     int frame;
 };
 
@@ -150,6 +154,7 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
         int w;
         int h;
         SDL_GetWindowSize(Window, &w, &h);
+        SDL_GetMouseState(&uniform.mouse_x, &uniform.mouse_y);
 
         uniform.screen_width = w;
         uniform.screen_height = h;
@@ -160,9 +165,9 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline);
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
-        // Testing uniform (iTime)
-        uniform.iTime += 0.1;
+        uniform.iTime += 1.0f / 32.0f;
         uniform.frame++;
+
         SDL_EndGPURenderPass(renderPass);
     }
 
@@ -200,7 +205,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
-    SDL_Delay(10);
+    SDL_Delay(1.0f / 32.0);
 
     if (exists(FragmentShaderFilePath) &&
         last_write_time(FragmentShaderFilePath) != lastGenerateTime)

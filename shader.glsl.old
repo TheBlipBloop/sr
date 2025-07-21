@@ -1,0 +1,12 @@
+void main()
+{
+    vec2 uv = ((gl_FragCoord.xy / iResolution.x) - 0.5) * 2.0; // Scale UV's to -1, 1
+    vec3 color = vec3(sin(uv.x * 30 + uv.y * 5.0 + iTime));
+
+    color *= vec3(1.0, 0.5, 0.2);
+    color += vec3(0.0, 0.0, pow(uv.y, 2.0));
+
+    color += uv.y / 5.0;
+
+    colorOut = vec4(color, 1.0);
+}

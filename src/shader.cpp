@@ -11,15 +11,17 @@ const string FRAGMENT_HEADER = R"(
 
 layout(location = 0) out vec4 outColor;
 
-layout(std140, set = 3, binding = 0) uniform Block {
+layout(std140, set = 3, binding = 0) uniform UniformData{
 	vec2 resolution;
 	float time_seconds;
+	vec2 mouse_position;
 	int frame;
-} block;
+} uniform_data;
 
-#define iTime block.time_seconds
-#define iResolution block.resolution
-#define iFrame block.frame
+#define iTime uniform_data.time_seconds
+#define iResolution uniform_data.resolution
+#define iMouse uniform_data.mouse_position
+#define iFrame uniform_data.frame
 
 )";
 
