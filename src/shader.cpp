@@ -5,20 +5,32 @@
 #include <filesystem>
 #include <shaderc/shaderc.h>
 
-Shader::Shader(string shaderSourcePath, ShaderStage shaderStage)
+Shader::Shader(string shaderSourcePath, ShaderStage shaderStage,
+               int uniformBufferCount)
 {
-    SourceFilePath = path(shaderSourcePath);
-    Stage = shaderStage;
+    sourceFilePath = path(shaderSourcePath);
+    stage = shaderStage;
+}
+
+Shader::~Shader()
+{
+    // TODO : Release GPU Shader
 }
 
 SDL_GPUShader* Shader::Load(SDL_GPUDevice* forDevice, bool forceRegenerate)
 {
-    if (ShaderCache == nullptr || forceRegenerate)
+    if (shaderCache == nullptr || forceRegenerate)
     {
-        ShaderCache = CompileShader(SourceFilePath, forDevice);
+        if (shaderCache != nullptr)
+        {
+            // TODO : Does not work if device is different
+            SDL_ReleaseGPUShader(forDevice, shaderCache);
+        }
+
+        shaderCache = CompileShader(sourceFilePath, forDevice);
     }
 
-    return ShaderCache;
+    return shaderCache;
 }
 
 SDL_GPUShader* Shader::CompileShader(path sourceFile, SDL_GPUDevice* onDevice)
@@ -48,6 +60,7 @@ SDL_GPUShader* Shader::CompileShader(path sourceFile, SDL_GPUDevice* onDevice)
     createInfo.entrypoint = GLSL_ENTRY_POINT;
     createInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
     createInfo.stage = GetSDLShaderStage();
+    createInfo.num_uniform_buffers = uniformBufferCount;
 
     SDL_GPUShader* shader = SDL_CreateGPUShader(onDevice, &createInfo);
     free(shaderCode);
@@ -98,7 +111,7 @@ bool Shader::CompileSourceToShaderCode(const char* sourceText,
 
 shaderc_shader_kind Shader::GetShaderKind() const
 {
-    if (Stage == ShaderStage::Fragment)
+    if (stage == ShaderStage::Fragment)
     {
         return shaderc_glsl_fragment_shader;
     }
@@ -108,7 +121,7 @@ shaderc_shader_kind Shader::GetShaderKind() const
 
 SDL_GPUShaderStage Shader::GetSDLShaderStage() const
 {
-    if (Stage == ShaderStage::Fragment)
+    if (stage == ShaderStage::Fragment)
     {
         return SDL_GPUShaderStage::SDL_GPU_SHADERSTAGE_FRAGMENT;
     }

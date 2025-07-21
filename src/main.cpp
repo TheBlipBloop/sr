@@ -1,4 +1,5 @@
 #include "shader.h"
+#include <complex>
 #include <string>
 #define SDL_MAIN_USE_CALLBACKS
 #define GLSL_ENTRY_POINT "main"
@@ -34,6 +35,8 @@ SDL_GPUGraphicsPipeline* Pipeline = nullptr;
 
 path VertexShaderFilePath = "vertex.glsl";
 path FragmentShaderFilePath = "shader.glsl";
+
+file_time_type lastGenerateTime;
 
 Shader* FragmentShader = nullptr;
 Shader* VertexShader = nullptr;
@@ -104,6 +107,14 @@ SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
 
     return pipeline;
 }
+#pragma pack(push, 1)
+struct alignas(16) UniformBlock
+{
+    float iTime;
+};
+#pragma pack(pop)
+
+UniformBlock uniform = {};
 
 bool Draw(SDL_GPUDevice* device, SDL_Window* window,
           SDL_GPUGraphicsPipeline* pipeline)
@@ -134,11 +145,14 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(cmdbuf, &colorTargetInfo, 1, NULL);
 
+        SDL_PushGPUFragmentUniformData(cmdbuf, 0, &uniform,
+                                       sizeof(UniformBlock));
+
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline);
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
         // Testing uniform (iTime)
-        testTime += 0.01;
+        uniform.iTime += 0.01;
         SDL_EndGPURenderPass(renderPass);
     }
 
@@ -153,6 +167,8 @@ bool RegenerateRenderPipline(Shader* vertex, Shader* fragment)
         CreateGraphicsPipeline(GraphicsDevice, vertex->Load(GraphicsDevice),
                                fragment->Load(GraphicsDevice, true));
 
+    lastGenerateTime = last_write_time(FragmentShaderFilePath);
+
     return true;
 }
 
@@ -165,14 +181,12 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     }
 
     VertexShader = new Shader("vertex.glsl", ShaderStage::Vertex);
-    FragmentShader = new Shader("shader.glsl", ShaderStage::Fragment);
+    FragmentShader = new Shader("shader.glsl", ShaderStage::Fragment, 1);
 
     RegenerateRenderPipline(VertexShader, FragmentShader);
 
     return SDL_AppResult::SDL_APP_CONTINUE;
 }
-
-file_time_type lastGenerateTime;
 
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
@@ -181,7 +195,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (exists(FragmentShaderFilePath) &&
         last_write_time(FragmentShaderFilePath) != lastGenerateTime)
     {
-        lastGenerateTime = last_write_time(FragmentShaderFilePath);
         RegenerateRenderPipline(VertexShader, FragmentShader);
     }
 
