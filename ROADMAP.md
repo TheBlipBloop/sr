@@ -22,6 +22,14 @@
     DONE!
 
 - Refactor to take advantage of OOP
+  - DONE AND I REGRET IT!
 
 - Inject uniforms (time, mouse positions, etc)
+  - TIME X
+  - RESOLUTION X
+  - FRAME X
+  - TODO : Mouse position, tbh thats it.
+- error handling with exception --- should NEVER crash regardeless of how dumb the GLSL code is
+- Embed vertex shader code / source
+- CLI for loading / specifiying fragment (maybe even specify directory and its able to switch between them on click or something?)
 - Record videos and screenshot interface
