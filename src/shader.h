@@ -1,12 +1,10 @@
 #pragma once
 
-#include <SDL3/SDL_gpu.h>
 #include <cstddef>
-#include <filesystem>
-#include <shaderc/shaderc.h>
+#include <string>
 
-using namespace std;
-using namespace std::filesystem;
+#include <SDL3/SDL_gpu.h>
+#include <shaderc/shaderc.h>
 
 class Shader
 {
@@ -26,32 +24,32 @@ public:
 public:
 
     // Get or load SDL shader.
-    virtual SDL_GPUShader* Load(SDL_GPUDevice* forDevice,
-                                bool forceRegenerate = false);
+    virtual SDL_GPUShader* Load(SDL_GPUDevice* for_device,
+                                bool force_regenerate = false);
 
     /************************************************************************************************/
     /** Compilation */
 
 private:
 
-#define GLSL_ENTRY_POINT "main"
+    const std::string GLSL_ENTRY_POINT = "main";
 
     // Post compilation SDL compatible shader.
-    SDL_GPUShader* shaderCache;
+    SDL_GPUShader* m_shader_cache;
 
     // The GPU device @shaderCache was loaded to.
-    SDL_GPUDevice* deviceCache;
+    SDL_GPUDevice* m_device_cache;
 
 protected:
 
-    bool CompileShader(SDL_GPUDevice* onDevice, SDL_GPUShader** outShader);
+    bool CompileShader(SDL_GPUDevice* for_device, SDL_GPUShader** out_shader);
 
-    bool CompileSourceToShaderCode(const char* sourceText,
-                                   size_t sourceTextLength,
-                                   char** outShaderCode,
-                                   size_t* outShaderCodeLength);
+    bool CompileSourceToShaderCode(const char* source_text,
+                                   size_t source_text_length,
+                                   char** out_shader_code,
+                                   size_t* out_shader_code_length);
 
-    virtual string GetShaderSourceCode() const = 0;
+    virtual std::string GetShaderSourceCode() const = 0;
 
     virtual int GetUniformBufferCount() const = 0;
 

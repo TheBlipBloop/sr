@@ -9,6 +9,7 @@
 #include "fragment-shader.h"
 #include "shader.h"
 #include "vertex-shader.h"
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
@@ -22,54 +23,64 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <shaderc/shaderc.h>
-#include <shaderc/shaderc.hpp>
-#include <shaderc/status.h>
 
-using namespace std::filesystem;
+struct alignas(16) UniformBlock
+{
+    float screen_width;
+    float screen_height;
+    float iTime;
+    float mouse_x;
+    float mouse_y;
+    int frame;
+};
 
-SDL_GPUDevice* GraphicsDevice;
-SDL_Window* Window;
-SDL_GPUGraphicsPipeline* Pipeline = nullptr;
+struct ApplicationContext
+{
+    SDL_GPUDevice* graphics_device;
+    SDL_Window* window;
+    SDL_GPUGraphicsPipeline* pipeline;
 
-path VertexShaderFilePath = "vertex.glsl";
-path FragmentShaderFilePath = "shader.glsl";
+    std::filesystem::path fragment_shader_file;
+    std::filesystem::file_time_type pipeline_last_regenerate_time;
 
-file_time_type lastGenerateTime;
+    Shader* fragment_shader = nullptr;
+    Shader* vertex_shader = nullptr;
 
-Shader* fragmentShader = nullptr;
-Shader* vertexShader = nullptr;
+    UniformBlock uniform = {0};
+};
 
-float testTime = 0.0f;
+ApplicationContext context = {0};
 
 bool InitializeDeviceAndWindow(const uint window_width,
                                const uint window_height)
 {
     SDL_Init(SDL_INIT_VIDEO);
 
-    GraphicsDevice =
+    context.graphics_device =
         SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, false, nullptr);
 
-    if (GraphicsDevice == nullptr)
+    if (context.graphics_device == nullptr)
     {
         SDL_Log("CreateDevice failed.");
         return false;
     }
 
-    Window = SDL_CreateWindow("Display", window_width, window_height,
-                              SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALWAYS_ON_TOP);
-    if (Window == nullptr)
+    context.window =
+        SDL_CreateWindow("Display", window_width, window_height,
+                         SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALWAYS_ON_TOP);
+    if (context.window == nullptr)
     {
         SDL_Log("CreateWindow failed: %s", SDL_GetError());
         return false;
     }
 
-    if (!SDL_ClaimWindowForGPUDevice(GraphicsDevice, Window))
+    if (!SDL_ClaimWindowForGPUDevice(context.graphics_device, context.window))
     {
         SDL_Log("ClaimWindow failed.");
         return false;
@@ -87,7 +98,8 @@ SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
     assert(fragmentShader);
 
     SDL_GPUColorTargetDescription colorTargetInfo = {};
-    colorTargetInfo.format = SDL_GetGPUSwapchainTextureFormat(device, Window);
+    colorTargetInfo.format =
+        SDL_GetGPUSwapchainTextureFormat(device, context.window);
 
     SDL_GPUGraphicsPipelineTargetInfo targetInfo = {};
     targetInfo.has_depth_stencil_target = false;
@@ -111,18 +123,6 @@ SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
 
     return pipeline;
 }
-
-struct alignas(16) UniformBlock
-{
-    float screen_width;
-    float screen_height;
-    float iTime;
-    float mouse_x;
-    float mouse_y;
-    int frame;
-};
-
-UniformBlock uniform = {0};
 
 bool Draw(SDL_GPUDevice* device, SDL_Window* window,
           SDL_GPUGraphicsPipeline* pipeline)
@@ -155,20 +155,20 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
 
         int w;
         int h;
-        SDL_GetWindowSize(Window, &w, &h);
-        uniform.screen_width = w;
-        uniform.screen_height = h;
+        SDL_GetWindowSize(window, &w, &h);
+        context.uniform.screen_width = w;
+        context.uniform.screen_height = h;
 
-        SDL_GetMouseState(&uniform.mouse_x, &uniform.mouse_y);
+        SDL_GetMouseState(&context.uniform.mouse_x, &context.uniform.mouse_y);
 
-        SDL_PushGPUFragmentUniformData(cmdbuf, 0, &uniform,
+        SDL_PushGPUFragmentUniformData(cmdbuf, 0, &context.uniform,
                                        sizeof(UniformBlock));
 
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline);
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
-        uniform.iTime += 1.0f / 32.0f;
-        uniform.frame++;
+        context.uniform.iTime += 1.0f / 32.0f;
+        context.uniform.frame++;
 
         SDL_EndGPURenderPass(renderPass);
     }
@@ -180,11 +180,12 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
 
 bool RegenerateRenderPipline(Shader* vertex, Shader* fragment)
 {
-    Pipeline =
-        CreateGraphicsPipeline(GraphicsDevice, vertex->Load(GraphicsDevice),
-                               fragment->Load(GraphicsDevice, true));
+    context.pipeline = CreateGraphicsPipeline(
+        context.graphics_device, vertex->Load(context.graphics_device),
+        fragment->Load(context.graphics_device, true));
 
-    lastGenerateTime = last_write_time(FragmentShaderFilePath);
+    context.pipeline_last_regenerate_time =
+        last_write_time(context.fragment_shader_file);
 
     return true;
 }
@@ -197,10 +198,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         return SDL_AppResult::SDL_APP_FAILURE;
     }
 
-    vertexShader = new VertexShader();
-    fragmentShader = new FragmentShader("shader.glsl");
+    context.fragment_shader_file = "shader.glsl";
 
-    RegenerateRenderPipline(vertexShader, fragmentShader);
+    context.vertex_shader = new VertexShader();
+    context.fragment_shader =
+        new FragmentShader(context.fragment_shader_file.c_str());
+
+    RegenerateRenderPipline(context.vertex_shader, context.fragment_shader);
 
     return SDL_AppResult::SDL_APP_CONTINUE;
 }
@@ -209,20 +213,21 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 {
     SDL_Delay(1.0f / 32.0);
 
-    if (exists(FragmentShaderFilePath) &&
-        last_write_time(FragmentShaderFilePath) != lastGenerateTime)
+    if (exists(context.fragment_shader_file) &&
+        last_write_time(context.fragment_shader_file) !=
+            context.pipeline_last_regenerate_time)
     {
-        RegenerateRenderPipline(vertexShader, fragmentShader);
+        RegenerateRenderPipline(context.vertex_shader, context.fragment_shader);
     }
 
-    // If the fragment shdare is invalid
-    if (fragmentShader == nullptr)
+    // If the fragment shader is invalid, pause until valid.
+    if (context.fragment_shader == nullptr)
     {
-        // Pause until its valid again
         return SDL_APP_CONTINUE;
     }
 
-    bool drawSuccess = Draw(GraphicsDevice, Window, Pipeline);
+    bool drawSuccess =
+        Draw(context.graphics_device, context.window, context.pipeline);
 
     return drawSuccess ? SDL_AppResult::SDL_APP_CONTINUE
                        : SDL_AppResult::SDL_APP_FAILURE;
@@ -240,9 +245,11 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 
 void SDL_AppQuit(void* appstate, SDL_AppResult result)
 {
-    SDL_WaitForGPUIdle(GraphicsDevice);
-    SDL_ReleaseGPUGraphicsPipeline(GraphicsDevice, Pipeline);
-    SDL_ReleaseWindowFromGPUDevice(GraphicsDevice, Window);
-    SDL_DestroyWindow(Window);
-    SDL_DestroyGPUDevice(GraphicsDevice);
+    delete context.vertex_shader;
+    delete context.fragment_shader;
+    SDL_WaitForGPUIdle(context.graphics_device);
+    SDL_ReleaseGPUGraphicsPipeline(context.graphics_device, context.pipeline);
+    SDL_ReleaseWindowFromGPUDevice(context.graphics_device, context.window);
+    SDL_DestroyWindow(context.window);
+    SDL_DestroyGPUDevice(context.graphics_device);
 }

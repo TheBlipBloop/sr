@@ -2,10 +2,15 @@
 
 #include "shader.h"
 
+#include <string>
+
+#include <SDL3/SDL_gpu.h>
+#include <shaderc/shaderc.h>
+
 // Vertex shader for a triangle that spans the entire view port.
 class VertexShader : public Shader
 {
-    string vertexShaderSource = R"(
+    const std::string VERTEX_SHADER_SOURCE = R"(
 	#version 450
 
 	void main()
@@ -20,7 +25,7 @@ class VertexShader : public Shader
 	}
 	)";
 
-    virtual string GetShaderSourceCode() const override;
+    virtual std::string GetShaderSourceCode() const override;
 
     virtual int GetUniformBufferCount() const override;
 

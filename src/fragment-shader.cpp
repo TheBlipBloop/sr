@@ -1,19 +1,20 @@
 #include "fragment-shader.h"
+
 #include <SDL3/SDL_iostream.h>
 #include <cstddef>
-#include <shaderc/shaderc.h>
 
-FragmentShader::FragmentShader(const char* sourceFilePath)
+FragmentShader::FragmentShader(const char* source_file_path)
 {
-    sourceFile = sourceFilePath;
+    m_source_file = source_file_path;
 }
 
-string FragmentShader::GetShaderSourceCode() const
+std::string FragmentShader::GetShaderSourceCode() const
 {
-    size_t sourceSize;
-    string source = (char*)SDL_LoadFile(sourceFile.c_str(), &sourceSize);
-    string processedSource = sourceHeader + source + sourceFooter;
-    return processedSource;
+    size_t source_size;
+    std::string source =
+        (char*)SDL_LoadFile(m_source_file.c_str(), &source_size);
+    std::string processed_source = SOURCE_HEADER + source + SOURCE_FOOTER;
+    return processed_source;
 }
 
 int FragmentShader::GetUniformBufferCount() const { return 1; }

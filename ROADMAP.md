@@ -30,6 +30,8 @@
   - FRAME X
   - TODO : Mouse position, tbh thats it.
 - error handling with exception --- should NEVER crash regardeless of how dumb the GLSL code is
+  - done ?
 - Embed vertex shader code / source
+  - done
 - CLI for loading / specifiying fragment (maybe even specify directory and its able to switch between them on click or something?)
 - Record videos and screenshot interface

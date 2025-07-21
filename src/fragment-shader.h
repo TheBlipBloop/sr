@@ -2,9 +2,17 @@
 
 #include "shader.h"
 
+#include <filesystem>
+#include <string>
+
+#include <SDL3/SDL_gpu.h>
+#include <shaderc/shaderc.h>
+
 class FragmentShader : public Shader
 {
-    string sourceHeader = R"(
+private:
+
+    const std::string SOURCE_HEADER = R"(
 	#version 450
 
 	layout(location = 0) out vec4 outColor;
@@ -22,7 +30,7 @@ class FragmentShader : public Shader
 	#define iFrame uniform_data.frame
 	)";
 
-    string sourceFooter = R"(
+    const std::string SOURCE_FOOTER = R"(
 	void main()
 	{
 		vec4 color = vec4(0);
@@ -31,15 +39,15 @@ class FragmentShader : public Shader
 	}
 	)";
 
-    path sourceFile;
+    std::filesystem::path m_source_file;
 
 public:
 
-    FragmentShader(const char* sourceFilePath);
+    FragmentShader(const char* source_file_path);
 
 protected:
 
-    virtual string GetShaderSourceCode() const override;
+    virtual std::string GetShaderSourceCode() const override;
 
     virtual int GetUniformBufferCount() const override;
 

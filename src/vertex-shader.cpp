@@ -1,8 +1,9 @@
 #include "vertex-shader.h"
-#include <SDL3/SDL_gpu.h>
-#include <shaderc/shaderc.h>
 
-string VertexShader::GetShaderSourceCode() const { return vertexShaderSource; }
+std::string VertexShader::GetShaderSourceCode() const
+{
+    return VERTEX_SHADER_SOURCE;
+}
 
 int VertexShader::GetUniformBufferCount() const { return 0; }
 

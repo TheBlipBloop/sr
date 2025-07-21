@@ -1,80 +1,79 @@
 #include "shader.h"
-#include <SDL3/SDL_gpu.h>
+
 #include <SDL3/SDL_log.h>
 #include <cassert>
-#include <cstddef>
-#include <shaderc/shaderc.h>
 
 Shader::Shader()
 {
-    shaderCache = nullptr;
-    deviceCache = nullptr;
+    m_shader_cache = nullptr;
+    m_device_cache = nullptr;
 }
 
 Shader::~Shader()
 {
-    if (shaderCache != nullptr)
+    if (m_shader_cache != nullptr)
     {
-        SDL_ReleaseGPUShader(deviceCache, shaderCache);
+        SDL_ReleaseGPUShader(m_device_cache, m_shader_cache);
     }
 }
 
-SDL_GPUShader* Shader::Load(SDL_GPUDevice* forDevice, bool forceRegenerate)
+SDL_GPUShader* Shader::Load(SDL_GPUDevice* for_device, bool force_regenerate)
 {
-    if (shaderCache == nullptr || forceRegenerate)
+    if (m_shader_cache == nullptr || force_regenerate)
     {
-        if (CompileShader(forDevice, &shaderCache))
+        if (CompileShader(for_device, &m_shader_cache))
         {
-            deviceCache = forDevice;
+            m_device_cache = for_device;
         }
     }
 
-    return shaderCache;
+    return m_shader_cache;
 }
 
-bool Shader::CompileShader(SDL_GPUDevice* onDevice, SDL_GPUShader** outShader)
+bool Shader::CompileShader(SDL_GPUDevice* for_device,
+                           SDL_GPUShader** out_shader)
 {
-    assert(onDevice != nullptr);
+    assert(for_device != nullptr);
 
-    string source = GetShaderSourceCode();
+    std::string source = GetShaderSourceCode();
 
-    char* shaderCode;
-    size_t shaderCodeSize;
+    char* shader_code;
+    size_t shader_code_size;
 
-    const bool compileSuccess = CompileSourceToShaderCode(
-        source.c_str(), source.size(), &shaderCode, &shaderCodeSize);
+    const bool compile_success = CompileSourceToShaderCode(
+        source.c_str(), source.size(), &shader_code, &shader_code_size);
 
-    if (!compileSuccess)
+    if (!compile_success)
     {
         return false;
     }
 
-    SDL_GPUShaderCreateInfo createInfo = {0};
-    createInfo.code = (Uint8*)shaderCode;
-    createInfo.code_size = shaderCodeSize;
-    createInfo.entrypoint = GLSL_ENTRY_POINT;
-    createInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
-    createInfo.stage = GetSDLShaderStage();
-    createInfo.num_uniform_buffers = GetUniformBufferCount();
+    SDL_GPUShaderCreateInfo create_info = {0};
+    create_info.code = (Uint8*)shader_code;
+    create_info.code_size = shader_code_size;
+    create_info.entrypoint = GLSL_ENTRY_POINT.c_str();
+    create_info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+    create_info.stage = GetSDLShaderStage();
+    create_info.num_uniform_buffers = GetUniformBufferCount();
 
-    *outShader = SDL_CreateGPUShader(onDevice, &createInfo);
-    free(shaderCode);
+    *out_shader = SDL_CreateGPUShader(for_device, &create_info);
+    free(shader_code);
 
     return true;
 }
 
-bool Shader::CompileSourceToShaderCode(const char* sourceText,
-                                       size_t sourceTextLength,
-                                       char** outShaderCode,
-                                       size_t* outShaderCodeLength)
+bool Shader::CompileSourceToShaderCode(const char* source_text,
+                                       size_t source_text_length,
+                                       char** out_shader_code,
+                                       size_t* out_shader_code_length)
 {
-    shaderc_compiler_t glslCompiler = shaderc_compiler_initialize();
+    shaderc_compiler_t glsl_compiler = shaderc_compiler_initialize();
 
     shaderc_compilation_result_t result = shaderc_compile_into_spv(
-        glslCompiler, sourceText, sourceTextLength, GetShaderKind(), "default",
-        GLSL_ENTRY_POINT, nullptr);
+        glsl_compiler, source_text, source_text_length, GetShaderKind(),
+        "default", GLSL_ENTRY_POINT.c_str(), nullptr);
 
-    shaderc_compiler_release(glslCompiler);
+    shaderc_compiler_release(glsl_compiler);
 
     const auto status = shaderc_result_get_compilation_status(result);
 
@@ -92,14 +91,12 @@ bool Shader::CompileSourceToShaderCode(const char* sourceText,
     const char* bytes = shaderc_result_get_bytes(result);
     const size_t size = shaderc_result_get_length(result);
 
-    *outShaderCode = (char*)malloc(size);
-    memcpy(*outShaderCode, bytes, size);
+    *out_shader_code = (char*)malloc(size);
+    memcpy(*out_shader_code, bytes, size);
 
     shaderc_result_release(result);
 
-    *outShaderCodeLength = size;
-
-    SDL_Log("Compiled shader of length : %zd", size);
+    *out_shader_code_length = size;
 
     return true;
 }
