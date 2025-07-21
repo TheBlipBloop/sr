@@ -11,9 +11,9 @@ Shader::Shader(string shaderSourcePath, ShaderStage shaderStage)
     Stage = shaderStage;
 }
 
-SDL_GPUShader* Shader::Load(SDL_GPUDevice* forDevice)
+SDL_GPUShader* Shader::Load(SDL_GPUDevice* forDevice, bool forceRegenerate)
 {
-    if (ShaderCache == nullptr)
+    if (ShaderCache == nullptr || forceRegenerate)
     {
         ShaderCache = CompileShader(SourceFilePath, forDevice);
     }

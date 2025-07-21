@@ -28,7 +28,8 @@ protected:
 public:
 
     // Get or load SDL shader.
-    virtual SDL_GPUShader* Load(SDL_GPUDevice* forDevice);
+    virtual SDL_GPUShader* Load(SDL_GPUDevice* forDevice,
+                                bool forceRegenerate = false);
 
     /************************************************************************************************/
     /** Constructors */

@@ -30,10 +30,15 @@ using namespace std::filesystem;
 
 SDL_GPUDevice* GraphicsDevice;
 SDL_Window* Window;
+SDL_GPUGraphicsPipeline* Pipeline = nullptr;
+
+path VertexShaderFilePath = "vertex.glsl";
+path FragmentShaderFilePath = "shader.glsl";
 
 Shader* FragmentShader = nullptr;
 Shader* VertexShader = nullptr;
-SDL_GPUGraphicsPipeline* Pipeline = nullptr;
+
+float testTime = 0.0f;
 
 bool InitializeDeviceAndWindow(const uint window_width,
                                const uint window_height)
@@ -100,8 +105,6 @@ SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
     return pipeline;
 }
 
-float testTime = 0.0f;
-
 bool Draw(SDL_GPUDevice* device, SDL_Window* window,
           SDL_GPUGraphicsPipeline* pipeline)
 {
@@ -144,16 +147,11 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
     return true;
 }
 
-bool RegenerateRenderPipline(const char* vertexShaderSourcePath,
-                             const char* fragmentShaderSourcePath)
+bool RegenerateRenderPipline(Shader* vertex, Shader* fragment)
 {
-    FragmentShader =
-        new Shader(fragmentShaderSourcePath, ShaderStage::Fragment);
-    VertexShader = new Shader(vertexShaderSourcePath, ShaderStage::Vertex);
-
-    Pipeline = CreateGraphicsPipeline(GraphicsDevice,
-                                      VertexShader->Load(GraphicsDevice),
-                                      FragmentShader->Load(GraphicsDevice));
+    Pipeline =
+        CreateGraphicsPipeline(GraphicsDevice, vertex->Load(GraphicsDevice),
+                               fragment->Load(GraphicsDevice, true));
 
     return true;
 }
@@ -166,7 +164,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         return SDL_AppResult::SDL_APP_FAILURE;
     }
 
-    RegenerateRenderPipline("vertex.glsl", "shader.glsl");
+    VertexShader = new Shader("vertex.glsl", ShaderStage::Vertex);
+    FragmentShader = new Shader("shader.glsl", ShaderStage::Fragment);
+
+    RegenerateRenderPipline(VertexShader, FragmentShader);
 
     return SDL_AppResult::SDL_APP_CONTINUE;
 }
@@ -177,12 +178,11 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 {
     SDL_Delay(100);
 
-    /*
     if (exists(FragmentShaderFilePath) &&
         last_write_time(FragmentShaderFilePath) != lastGenerateTime)
     {
         lastGenerateTime = last_write_time(FragmentShaderFilePath);
-        RegenerateRenderPipline("vertex.glsl", FragmentShaderFilePath.c_str());
+        RegenerateRenderPipline(VertexShader, FragmentShader);
     }
 
     // If the fragment shdare is invalid
@@ -191,7 +191,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         // Pause until its valid again
         return SDL_APP_CONTINUE;
     }
-    */
 
     bool drawSuccess = Draw(GraphicsDevice, Window, Pipeline);
 

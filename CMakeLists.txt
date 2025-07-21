@@ -23,17 +23,11 @@ set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
 #
 add_subdirectory(external/shaderc)
 
-# Header files
-set(HEADER_FILES "src/shader.h")
-
-# Source files
-# set(SOURCE_FILES "src/main.cpp" "src/shader.cpp")
-
 # Define includes
 include_directories(src ${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/shaderc)
 
 # Add executable
-add_executable(sr src/main.cpp src/shader.cpp src/shader.h )
+add_executable(sr src/main.cpp src/shader.cpp src/shader.h)
 # target_sources(sr PRIVATE src/shader.cpp src/shader.h)
 # target_include_directories(sr PRIVATE src/)
 
