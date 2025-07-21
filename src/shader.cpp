@@ -4,12 +4,40 @@
 #include <cassert>
 #include <filesystem>
 #include <shaderc/shaderc.h>
+#include <string>
+
+const string FRAGMENT_HEADER = R"(
+#version 450
+
+layout(location = 0) out vec4 outColor;
+
+layout(std140, set = 3, binding = 0) uniform Block {
+	vec2 resolution;
+	float time_seconds;
+	int frame;
+} block;
+
+#define iTime block.time_seconds
+#define iResolution block.resolution
+#define iFrame block.frame
+
+)";
+
+const string FRAGMENT_FOOTER = R"(
+void main()
+{
+    vec4 color = vec4(0);
+    mainImage(color, gl_FragCoord.xy);
+    outColor = color;
+}
+)";
 
 Shader::Shader(string shaderSourcePath, ShaderStage shaderStage,
                int uniformBufferCount)
 {
     sourceFilePath = path(shaderSourcePath);
     stage = shaderStage;
+    this->uniformBufferCount = uniformBufferCount;
 }
 
 Shader::~Shader()
@@ -41,11 +69,19 @@ SDL_GPUShader* Shader::CompileShader(path sourceFile, SDL_GPUDevice* onDevice)
     size_t sourceSize;
     const char* source = (char*)SDL_LoadFile(sourceFile.c_str(), &sourceSize);
 
+    string preprocessedSource = string(source);
+    if (stage == ShaderStage::Fragment)
+    {
+        preprocessedSource =
+            FRAGMENT_HEADER + preprocessedSource + FRAGMENT_FOOTER;
+    }
+
     char* shaderCode;
     size_t shaderCodeSize;
 
     const bool compileSuccess = CompileSourceToShaderCode(
-        source, sourceSize, &shaderCode, &shaderCodeSize);
+        preprocessedSource.c_str(), preprocessedSource.length(), &shaderCode,
+        &shaderCodeSize);
 
     SDL_free((void*)source);
 

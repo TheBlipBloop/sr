@@ -1,5 +1,6 @@
 #include "shader.h"
 #include <complex>
+#include <cstdint>
 #include <string>
 #define SDL_MAIN_USE_CALLBACKS
 #define GLSL_ENTRY_POINT "main"
@@ -107,14 +108,15 @@ SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
 
     return pipeline;
 }
-#pragma pack(push, 1)
 struct alignas(16) UniformBlock
 {
+    float screen_width;
+    float screen_height;
     float iTime;
+    int frame;
 };
-#pragma pack(pop)
 
-UniformBlock uniform = {};
+UniformBlock uniform = {0};
 
 bool Draw(SDL_GPUDevice* device, SDL_Window* window,
           SDL_GPUGraphicsPipeline* pipeline)
@@ -145,6 +147,13 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(cmdbuf, &colorTargetInfo, 1, NULL);
 
+        int w;
+        int h;
+        SDL_GetWindowSize(Window, &w, &h);
+
+        uniform.screen_width = w;
+        uniform.screen_height = h;
+
         SDL_PushGPUFragmentUniformData(cmdbuf, 0, &uniform,
                                        sizeof(UniformBlock));
 
@@ -152,7 +161,8 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
         // Testing uniform (iTime)
-        uniform.iTime += 0.01;
+        uniform.iTime += 0.1;
+        uniform.frame++;
         SDL_EndGPURenderPass(renderPass);
     }
 
@@ -190,7 +200,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
-    SDL_Delay(100);
+    SDL_Delay(10);
 
     if (exists(FragmentShaderFilePath) &&
         last_write_time(FragmentShaderFilePath) != lastGenerateTime)
