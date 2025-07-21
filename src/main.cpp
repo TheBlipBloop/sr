@@ -1,10 +1,5 @@
-#include "shader.h"
-#include <SDL3/SDL_mouse.h>
-#include <complex>
-#include <cstdint>
-#include <string>
 #define SDL_MAIN_USE_CALLBACKS
-#define GLSL_ENTRY_POINT "main"
+#define APPROX_FRAMES_PER_SECOND 30
 
 #include "fragment-shader.h"
 #include "shader.h"
@@ -19,6 +14,7 @@
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
@@ -124,6 +120,31 @@ SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
     return pipeline;
 }
 
+void UpdateUniformWindow(UniformBlock& in_out_uniforms)
+{
+    SDL_Window* window = context.window;
+
+    int w;
+    int h;
+    SDL_GetWindowSize(window, &w, &h);
+
+    in_out_uniforms.screen_width = w;
+    in_out_uniforms.screen_height = h;
+}
+void UpdateUniformMouse(UniformBlock& in_out_uniforms)
+{
+    SDL_GetMouseState(&in_out_uniforms.mouse_x, &in_out_uniforms.mouse_y);
+}
+
+void UpdateUniforms(UniformBlock& in_out_uniforms)
+{
+    UpdateUniformWindow(in_out_uniforms);
+    UpdateUniformMouse(in_out_uniforms);
+
+    context.uniform.iTime += 1.0f / APPROX_FRAMES_PER_SECOND;
+    context.uniform.frame++;
+}
+
 bool Draw(SDL_GPUDevice* device, SDL_Window* window,
           SDL_GPUGraphicsPipeline* pipeline)
 {
@@ -153,23 +174,13 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(cmdbuf, &colorTargetInfo, 1, NULL);
 
-        int w;
-        int h;
-        SDL_GetWindowSize(window, &w, &h);
-        context.uniform.screen_width = w;
-        context.uniform.screen_height = h;
-
-        SDL_GetMouseState(&context.uniform.mouse_x, &context.uniform.mouse_y);
+        UpdateUniforms(context.uniform);
 
         SDL_PushGPUFragmentUniformData(cmdbuf, 0, &context.uniform,
                                        sizeof(UniformBlock));
 
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline);
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
-
-        context.uniform.iTime += 1.0f / 32.0f;
-        context.uniform.frame++;
-
         SDL_EndGPURenderPass(renderPass);
     }
 
@@ -190,15 +201,35 @@ bool RegenerateRenderPipline(Shader* vertex, Shader* fragment)
     return true;
 }
 
+bool ParseArguments(int argc, char** argv, std::string& out_shader_file_path)
+{
+    if (argc != 2)
+    {
+        return false;
+    }
+
+    out_shader_file_path = argv[1];
+
+    return true;
+}
+
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 {
-    if (!InitializeDeviceAndWindow(256, 256))
+    std::string fragment_shader_file_path;
+    if (!ParseArguments(argc, argv, fragment_shader_file_path))
+    {
+        SDL_Log("Parsed invalid arguments.");
+        SDL_Log("Usage: sr [PATH TO GLSL FRAGMENT SHADER]. Aborting.");
+        return SDL_APP_FAILURE;
+    }
+
+    if (!InitializeDeviceAndWindow(512, 512))
     {
         SDL_Log("Initialization failed. Aborting.");
         return SDL_AppResult::SDL_APP_FAILURE;
     }
 
-    context.fragment_shader_file = "shader.glsl";
+    context.fragment_shader_file = fragment_shader_file_path;
 
     context.vertex_shader = new VertexShader();
     context.fragment_shader =
@@ -211,7 +242,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
-    SDL_Delay(1.0f / 32.0);
+    SDL_Delay(1.0f / APPROX_FRAMES_PER_SECOND);
 
     if (exists(context.fragment_shader_file) &&
         last_write_time(context.fragment_shader_file) !=
