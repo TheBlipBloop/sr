@@ -1,5 +1,6 @@
 #include "shader.h"
 
+#include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_log.h>
 #include <cassert>
 
@@ -19,8 +20,21 @@ Shader::~Shader()
 
 SDL_GPUShader* Shader::Load(SDL_GPUDevice* for_device, bool force_regenerate)
 {
-    if (m_shader_cache == nullptr || force_regenerate)
+    if (m_shader_cache == nullptr)
     {
+        if (CompileShader(for_device, &m_shader_cache))
+        {
+            m_device_cache = for_device;
+        }
+    }
+
+    if (force_regenerate)
+    {
+        if (m_shader_cache)
+        {
+            SDL_ReleaseGPUShader(m_device_cache, m_shader_cache);
+        }
+
         if (CompileShader(for_device, &m_shader_cache))
         {
             m_device_cache = for_device;

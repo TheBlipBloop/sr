@@ -191,6 +191,12 @@ bool Draw(SDL_GPUDevice* device, SDL_Window* window,
 
 bool RegenerateRenderPipline(Shader* vertex, Shader* fragment)
 {
+    if (context.pipeline != nullptr)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(context.graphics_device,
+                                       context.pipeline);
+    }
+
     context.pipeline = CreateGraphicsPipeline(
         context.graphics_device, vertex->Load(context.graphics_device),
         fragment->Load(context.graphics_device, true));
