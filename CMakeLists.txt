@@ -16,11 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(SDL3 REQUIRED)
 find_package(OpenGL REQUIRED)
 
-# ? not needed any more ?
-set(SHADERC_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+# add shaderc (no testing)
 set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
-
-#
 add_subdirectory(external/shaderc)
 
 # Define includes
@@ -28,8 +25,6 @@ include_directories(src ${SDL3_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} external/shad
 
 # Add executable
 add_executable(sr src/main.cpp src/shader.cpp src/shader.h src/fragment-shader.cpp src/fragment-shader.h src/vertex-shader.cpp src/vertex-shader.h)
-# target_sources(sr PRIVATE src/shader.cpp src/shader.h)
-# target_include_directories(sr PRIVATE src/)
 
 # Link libs
 target_link_libraries(sr
