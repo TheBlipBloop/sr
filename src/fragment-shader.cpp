@@ -13,6 +13,7 @@ std::string FragmentShader::GetShaderSourceCode() const
     size_t source_size;
     std::string source =
         (char*)SDL_LoadFile(m_source_file.c_str(), &source_size);
+
     std::string processed_source = SOURCE_HEADER + source + SOURCE_FOOTER;
     return processed_source;
 }
