@@ -82,6 +82,16 @@ bool InitializeDeviceAndWindow(const uint window_width,
         return false;
     }
 
+    if (!SDL_SetGPUSwapchainParameters(
+            context.graphics_device, context.window,
+            SDL_GPUSwapchainComposition::
+                SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR,
+            SDL_GPUPresentMode::SDL_GPU_PRESENTMODE_VSYNC))
+    {
+        SDL_Log("Set GPUSwapchain failed.");
+        return false;
+    }
+
     return true;
 }
 
@@ -124,12 +134,12 @@ void UpdateUniformWindow(UniformBlock& in_out_uniforms)
 {
     SDL_Window* window = context.window;
 
-    int w;
-    int h;
-    SDL_GetWindowSize(window, &w, &h);
+    int width;
+    int height;
+    SDL_GetWindowSize(window, &width, &height);
 
-    in_out_uniforms.screen_width = w;
-    in_out_uniforms.screen_height = h;
+    in_out_uniforms.screen_width = width;
+    in_out_uniforms.screen_height = height;
 }
 void UpdateUniformMouse(UniformBlock& in_out_uniforms)
 {
