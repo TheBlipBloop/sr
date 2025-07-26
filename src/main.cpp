@@ -66,8 +66,9 @@ bool InitializeDeviceAndWindow(const uint window_width,
     }
 
     context.window =
-        SDL_CreateWindow("Display", window_width, window_height,
+        SDL_CreateWindow("sr", window_width, window_height,
                          SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALWAYS_ON_TOP);
+
     if (context.window == nullptr)
     {
         SDL_Log("CreateWindow failed: %s", SDL_GetError());
