@@ -19,14 +19,14 @@ private:
 
 	layout(std140, set = 3, binding = 0) uniform UniformData{
 		vec2 resolution;
-		float time_seconds;
 		vec2 mouse_position;
+		float time_seconds;
 		int frame;
 	} uniform_data;
 
 	#define iTime uniform_data.time_seconds
 	#define iResolution uniform_data.resolution
-	#define iMouse uniform_data.mouse_position
+	#define iMouse vec2(uniform_data.mouse_position.x, uniform_data.resolution.y - uniform_data.mouse_position.y)
 	#define iFrame uniform_data.frame
 	)";
 
@@ -34,7 +34,8 @@ private:
 	void main()
 	{
 		vec4 color = vec4(0);
-		mainImage(color, gl_FragCoord.xy);
+		vec2 coord = vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y);
+		mainImage(color, coord);
 		outColor = color;
 	}
 	)";

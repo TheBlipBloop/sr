@@ -28,12 +28,10 @@
 
 struct alignas(16) UniformBlock
 {
-    float screen_width;
-    float screen_height;
-    float iTime;
-    float mouse_x;
-    float mouse_y;
-    int frame;
+    float screen_dimensions[2]; // width height (pixels)
+    float mouse_postion[2];     // mouse_x mouse_y (pixels)
+    float iTime;                // time seconds
+    int frame;                  // current frame
 };
 
 struct ApplicationContext
@@ -138,12 +136,13 @@ void UpdateUniformWindow(UniformBlock& in_out_uniforms)
     int height;
     SDL_GetWindowSize(window, &width, &height);
 
-    in_out_uniforms.screen_width = width;
-    in_out_uniforms.screen_height = height;
+    in_out_uniforms.screen_dimensions[0] = width;
+    in_out_uniforms.screen_dimensions[1] = height;
 }
 void UpdateUniformMouse(UniformBlock& in_out_uniforms)
 {
-    SDL_GetMouseState(&in_out_uniforms.mouse_x, &in_out_uniforms.mouse_y);
+    SDL_GetMouseState(&in_out_uniforms.mouse_postion[0],
+                      &in_out_uniforms.mouse_postion[1]);
 }
 
 void UpdateUniforms(UniformBlock& in_out_uniforms)
