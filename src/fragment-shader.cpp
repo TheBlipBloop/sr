@@ -3,12 +3,18 @@
 #include <SDL3/SDL_iostream.h>
 #include <cstddef>
 
-FragmentShader::FragmentShader(const char* source_file_path)
+/************************************************************************************************/
+/** Constructor */
+
+ShadertoyFragmentShader::ShadertoyFragmentShader(const char* source_file_path)
 {
     m_source_file = source_file_path;
 }
 
-std::string FragmentShader::GetShaderSourceCode() const
+/************************************************************************************************/
+/** Shader Source Code */
+
+std::string ShadertoyFragmentShader::GetShaderSourceCode() const
 {
     size_t source_size;
     std::string source =
@@ -18,14 +24,14 @@ std::string FragmentShader::GetShaderSourceCode() const
     return processed_source;
 }
 
-int FragmentShader::GetUniformBufferCount() const { return 1; }
+int ShadertoyFragmentShader::GetUniformBufferCount() const { return 1; }
 
-SDL_GPUShaderStage FragmentShader::GetSDLShaderStage() const
+SDL_GPUShaderStage ShadertoyFragmentShader::GetSDLShaderStage() const
 {
     return SDL_GPUShaderStage::SDL_GPU_SHADERSTAGE_FRAGMENT;
 }
 
-shaderc_shader_kind FragmentShader::GetShaderKind() const
+shaderc_shader_kind ShadertoyFragmentShader::GetShaderKind() const
 {
     return shaderc_glsl_fragment_shader;
 };

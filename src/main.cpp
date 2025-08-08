@@ -26,6 +26,8 @@
 #include <cstring>
 #include <filesystem>
 
+// Structure used to pass data to the UniformBlock of the fragment active
+// shader.
 struct alignas(16) UniformBlock
 {
     float screen_dimensions[2]; // width height (pixels)
@@ -34,6 +36,7 @@ struct alignas(16) UniformBlock
     int frame;                  // current frame
 };
 
+// Contains state of SR instance.
 struct ApplicationContext
 {
     SDL_GPUDevice* graphics_device;
@@ -49,8 +52,12 @@ struct ApplicationContext
     UniformBlock uniform = {0};
 };
 
+// Global application context
 ApplicationContext context = {0};
 
+// Initializes SDL window and graphics devies.
+// @window_width -- Height of the floating window (px).
+// @window_height -- Width of the floating window (px).
 bool InitializeDeviceAndWindow(const uint window_width,
                                const uint window_height)
 {
@@ -94,6 +101,14 @@ bool InitializeDeviceAndWindow(const uint window_width,
     return true;
 }
 
+// Generates a graphics pipeline which renderings @fragmentShader on the
+// geometry described by @vertexShader on GPU @device.
+//
+// @device -- GPU to render on.
+// @vertexShader -- Vertex shader used to render this pipelines geometry.
+// @fragmentShader -- fragmentShader applied to this pipelines geometry.
+//
+// @Returns -- The newly graphics pipeline or nullptr on failure.
 SDL_GPUGraphicsPipeline* CreateGraphicsPipeline(SDL_GPUDevice* device,
                                                 SDL_GPUShader* vertexShader,
                                                 SDL_GPUShader* fragmentShader)
@@ -249,7 +264,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 
     context.vertex_shader = new VertexShader();
     context.fragment_shader =
-        new FragmentShader(context.fragment_shader_file.c_str());
+        new ShadertoyFragmentShader(context.fragment_shader_file.c_str());
 
     RegenerateRenderPipline(context.vertex_shader, context.fragment_shader);
 

@@ -10,6 +10,11 @@
 // Vertex shader for a triangle that spans the entire view port.
 class VertexShader : public Shader
 {
+    /************************************************************************************************/
+    /** Vertex Shader */
+
+private:
+
     const std::string VERTEX_SHADER_SOURCE = R"(
 	#version 450
 
@@ -25,11 +30,23 @@ class VertexShader : public Shader
 	}
 	)";
 
+    /************************************************************************************************/
+    /** Shader Source Code */
+
+protected:
+
+    // Returns a string holding the source code of a GLSL-SPIRV shader.
     virtual std::string GetShaderSourceCode() const override;
 
+    // Returns the number of uniform buffers in the code returned by
+    // @GetShaderSourceCode().
     virtual int GetUniformBufferCount() const override;
 
+    // Returns the shader stage of code returned by
+    // @GetShaderSourceCode().
     virtual SDL_GPUShaderStage GetSDLShaderStage() const override;
 
+    // Returns the type of shader the code returned by
+    // @GetShaderSourceCode().
     virtual shaderc_shader_kind GetShaderKind() const override;
 };
